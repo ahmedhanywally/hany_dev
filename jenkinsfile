@@ -1,0 +1,68 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Setup') {
+            steps {
+                script {
+                    // Create a directory for HTML files
+                    sh 'mkdir -p html_output'
+                    
+                    // Write the specified HTML content to index.html
+                    writeFile file: 'html_output/index.html', text: '''
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>Hello Output</title>
+                    </head>
+                    <body>
+                        <h1>Hello</h1>
+                    </body>
+                    </html>
+                    '''
+                }
+            }
+        }
+
+        stage('Serve HTML') {
+            steps {
+                script {
+                    // Use Python's HTTP server to serve the HTML file
+                    sh 'python -m http.server --directory html_output 8000 &'
+                    
+                    // Sleep for a few seconds to allow the server to start
+                    sleep 5
+                }
+            }
+        }
+
+        stage('Check Output') {
+            steps {
+                script {
+                    // Fetch the content of the served HTML file
+                    def response = sh(script: "curl -s http://localhost:8000", returnStdout: true).trim()
+                    
+                    // Log the fetched HTML content
+                    echo "HTML Output: ${response}"
+                    
+                    // Basic verification to ensure "Hello" is in the response
+                    if (response.contains("<h1>Hello</h1>")) {
+                        echo "The output contains '<h1>Hello</h1>'."
+                    } else {
+                        error "The output does not contain '<h1>Hello</h1>'."
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Clean up - kill the HTTP server process and archive the HTML output
+            sh 'pkill -f "python -m http.server"'
+            archiveArtifacts artifacts: 'html_output/**', allowEmptyArchive: true
+        }
+    }
+}
