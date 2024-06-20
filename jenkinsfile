@@ -1,9 +1,7 @@
-
 pipeline {
     agent any
 
     environment {
-        // Define the HTML content directly in the environment section
         HTML_CONTENT = '''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,7 +11,6 @@ pipeline {
 </head>
 <body>
     <h1>Hello</h1>
-    <p>Open this page in your browser: <a href="${BUILD_URL}html_output/index.html" target="_blank">Hello Output</a></p>
 </body>
 </html>
 '''
@@ -23,21 +20,20 @@ pipeline {
         stage('Write HTML') {
             steps {
                 script {
-                    // Create the html_output directory if it doesn't exist
-                    sh 'mkdir -p html_output'
-                    
-                    // Write the HTML content to a file
-                    writeFile file: 'html_output/index.html', text: HTML_CONTENT
+                    writeFile file: 'index.html', text: HTML_CONTENT
                 }
             }
         }
 
-        stage('Serve HTML') {
+        stage('Archive HTML') {
             steps {
-                script {
-                    // Archive HTML output for access
-                    archiveArtifacts artifacts: 'html_output/**', allowEmptyArchive: true
-                }
+                archiveArtifacts artifacts: 'index.html', allowEmptyArchive: true
+            }
+        }
+
+        stage('Instruction') {
+            steps {
+                echo "HTML page generated. Download and open 'index.html' to view the content."
             }
         }
     }
