@@ -18,20 +18,57 @@ pipeline {
     }
 
     stages {
-        stage('Display Hello') {
+        stage('Write HTML') {
             steps {
                 script {
-                    // Log the HTML content
-                    echo "Full HTML Content:\n${HTML_CONTENT}"
+                    // Create the html_output directory if it doesn't exist
+                    sh 'mkdir -p html_output'
+                    
+                    // Write the HTML content to a file
+                    writeFile file: 'html_output/index.html', text: HTML_CONTENT
+                }
+            }
+        }
+
+        stage('Serve HTML') {
+            steps {
+                script {
+                    // Serve the HTML file using Python's HTTP server
+                    sh 'python -m http.server --directory html_output 8000 &'
+                    
+                    // Wait for a few seconds to ensure the server is up
+                    sleep 5
+                }
+            }
+        }
+
+        stage('Extract and Display Hello') {
+            steps {
+                script {
+                    // Fetch the served HTML content using curl
+                    def response = sh(script: "curl -s http://localhost:8000", returnStdout: true).trim()
+                    
+                    // Log the fetched HTML content
+                    echo "Fetched HTML Content:\n${response}"
                     
                     // Extract and display the "Hello" message
-                    if (HTML_CONTENT.contains("<h1>Hello</h1>")) {
-                        echo "Extracted Message: Hello"
+                    def helloMessage = response.find(/<h1>(.*)<\/h1>/) { fullMatch, content -> content }
+                    
+                    if (helloMessage) {
+                        echo "Extracted Message: ${helloMessage}"
                     } else {
                         error "The HTML content does not contain the expected 'Hello' message."
                     }
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            // Clean up: stop the HTTP server and archive the HTML output
+            sh 'pkill -f "python -m http.server"'
+            archiveArtifacts artifacts: 'html_output/**', allowEmptyArchive: true
         }
     }
 }
