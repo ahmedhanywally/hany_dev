@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -12,6 +13,7 @@ pipeline {
 </head>
 <body>
     <h1>Hello</h1>
+    <p>Open this page in your browser: <a href="${BUILD_URL}html_output/index.html" target="_blank">Hello Output</a></p>
 </body>
 </html>
 '''
@@ -33,42 +35,10 @@ pipeline {
         stage('Serve HTML') {
             steps {
                 script {
-                    // Serve the HTML file using Python's HTTP server
-                    sh 'python -m http.server --directory html_output 8000 &'
-                    
-                    // Wait for a few seconds to ensure the server is up
-                    sleep 5
+                    // Archive HTML output for access
+                    archiveArtifacts artifacts: 'html_output/**', allowEmptyArchive: true
                 }
             }
-        }
-
-        stage('Extract and Display Hello') {
-            steps {
-                script {
-                    // Fetch the served HTML content using curl
-                    def response = sh(script: "curl -s http://localhost:8000", returnStdout: true).trim()
-                    
-                    // Log the fetched HTML content
-                    echo "Fetched HTML Content:\n${response}"
-                    
-                    // Extract and display the "Hello" message
-                    def helloMessage = response.find(/<h1>(.*)<\/h1>/) { fullMatch, content -> content }
-                    
-                    if (helloMessage) {
-                        echo "Extracted Message: ${helloMessage}"
-                    } else {
-                        error "The HTML content does not contain the expected 'Hello' message."
-                    }
-                }
-            }
-        }
-    }
-
-    post {
-        always {
-            // Clean up: stop the HTTP server and archive the HTML output
-            sh 'pkill -f "python -m http.server"'
-            archiveArtifacts artifacts: 'html_output/**', allowEmptyArchive: true
         }
     }
 }
