@@ -8,8 +8,13 @@ pipeline {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hello Output</title>
+    <script>
+        function openPage() {
+            window.open("index.html", "_blank");
+        }
+    </script>
 </head>
-<body>
+<body onload="openPage()">
     <h1>Hello</h1>
 </body>
 </html>
@@ -33,7 +38,7 @@ pipeline {
 
         stage('Instruction') {
             steps {
-                echo "HTML page generated. Download and open 'index.html' to view the content."
+                echo "HTML page generated and opened automatically in the background."
             }
         }
     }
